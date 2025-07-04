@@ -24,8 +24,15 @@ CREATE TABLE KeyPoints (
     ImageUrl TEXT,
     Latitude REAL,
 	Longitude REAL,
-    TourId INTEGER,
-    FOREIGN KEY (TourId) REFERENCES Tours(Id) ON DELETE CASCADE
+    TourId INTEGER
+);
+
+CREATE TABLE ToursKeypoints (
+	Id INTEGER PRIMARY KEY AUTOINCREMENT,
+	TourId INTEGER NOT NULL,
+	KeyPointId INTEGER NOT NULL,
+	FOREIGN KEY (TourId) REFERENCES Tours(Id) ON DELETE CASCADE,
+	FOREIGN KEY (KeyPointId) REFERENCES KeyPoints(Id) ON DELETE CASCADE
 );
 
 CREATE TABLE Restaurants (
@@ -73,22 +80,39 @@ INSERT INTO Tours (Id,Name,Description,DateTime,MaxGuests,Status,GuideId) VALUES
  (4,'Zemunski Obala Tura','Scenski obilazak uz reku u Zemunu','2025-04-04 12:00:00',25,'objavljeno',10),
  (5,'Subotica Kulturna Tura','Istražite kulturnu baštinu Subotice','2025-04-05 08:00:00',12,'objavljeno',11);
 
-INSERT INTO KeyPoints (Id,OrderPosition,Name,Description,ImageUrl,Latitude,Longitude,TourId) VALUES 
- (1,1,'Kalemegdan Tvrđava','Istorijska tvrđava u Beogradu sa prelepim pogledom','https://example.com/kalemegdan.jpg',44.8176,20.4633,1),
- (2,2,'Saborna Crkva','Lepa pravoslavna crkva u Novom Sadu','https://example.com/saborna.jpg',45.2671,19.8335,1),
- (3,3,'Muzej Nikole Tesle','Muzej posvećen Nikoli Tesli u Beogradu','https://example.com/tesla_museum.jpg',44.8228,20.4572,1),
- (4,1,'Petrovaradinska Tvrđava','Tvrđava sa prelepim pogledom na Novi Sad','https://example.com/petrovaradinska_tvrdjava.jpg',45.2461,19.8446,2),
- (5,2,'Zlatibor Priroda','Netaknuta priroda i staze na Zlatiboru','https://example.com/zlatibor_nature.jpg',43.7284,19.6089,2),
- (6,3,'Centar Novog Sada','Centar Novog Sada sa odličnim restoranima i prodavnicama','https://example.com/novi_sad_city.jpg',45.2671,19.8335,2),
- (7,1,'Niška Tvrđava','Tvrđava iz rimskog doba smeštena u Nišu','https://example.com/niska_tvrdjava.jpg',43.3147,21.8954,3),
- (8,2,'Crkva Svetog Save','Najveća crkva u Nišu','https://example.com/sveti_sava.jpg',43.3172,21.8961,3),
- (9,3,'Čele Kula','Spomenik žrtvama Prvog srpskog ustanka','https://example.com/cele_kula.jpg',43.3125,21.8958,3),
- (10,1,'Zemunska Obala','Uživajte u mirnom pogledu na reku sa Zemunske obale','https://example.com/zemun_quay.jpg',44.9862,20.4068,4),
- (11,2,'Gardos Toranj','Srednjovekovni toranj sa prelepim pogledom na reku','https://example.com/gardos_tower.jpg',44.9925,20.4031,4),
- (12,3,'Zemunska Crkva','Stara crkva sa bogatom istorijom','https://example.com/zemun_church.jpg',44.9867,20.406,4),
- (13,1,'Centar Subotice','Prelepa arhitektura i istorijske zgrade u centru Subotice','https://example.com/subotica_city.jpg',46.1003,19.6669,5),
- (14,2,'Palićko Jezero','Mirno jezero idealno za odmor','https://example.com/palic_lake.jpg',46.0705,19.7119,5),
- (15,3,'Subotička Sinagoga','Najveća sinagoga u Srbiji','https://example.com/subotica_synagogue.jpg',46.1003,19.6669,5);
+INSERT INTO KeyPoints (Id,OrderPosition,Name,Description,ImageUrl,Latitude,Longitude) VALUES 
+ (1,1,'Kalemegdan Tvrđava','Istorijska tvrđava u Beogradu sa prelepim pogledom','https://example.com/kalemegdan.jpg',44.8176,20.4633),
+ (2,2,'Saborna Crkva','Lepa pravoslavna crkva u Novom Sadu','https://example.com/saborna.jpg',45.2671,19.8335),
+ (3,3,'Muzej Nikole Tesle','Muzej posvećen Nikoli Tesli u Beogradu','https://example.com/tesla_museum.jpg',44.8228,20.4572),
+ (4,1,'Petrovaradinska Tvrđava','Tvrđava sa prelepim pogledom na Novi Sad','https://example.com/petrovaradinska_tvrdjava.jpg',45.2461,19.8446),
+ (5,2,'Zlatibor Priroda','Netaknuta priroda i staze na Zlatiboru','https://example.com/zlatibor_nature.jpg',43.7284,19.6089),
+ (6,3,'Centar Novog Sada','Centar Novog Sada sa odličnim restoranima i prodavnicama','https://example.com/novi_sad_city.jpg',45.2671,19.8335),
+ (7,1,'Niška Tvrđava','Tvrđava iz rimskog doba smeštena u Nišu','https://example.com/niska_tvrdjava.jpg',43.3147,21.8954),
+ (8,2,'Crkva Svetog Save','Najveća crkva u Nišu','https://example.com/sveti_sava.jpg',43.3172,21.8961),
+ (9,3,'Čele Kula','Spomenik žrtvama Prvog srpskog ustanka','https://example.com/cele_kula.jpg',43.3125,21.8958),
+ (10,1,'Zemunska Obala','Uživajte u mirnom pogledu na reku sa Zemunske obale','https://example.com/zemun_quay.jpg',44.9862,20.4068),
+ (11,2,'Gardos Toranj','Srednjovekovni toranj sa prelepim pogledom na reku','https://example.com/gardos_tower.jpg',44.9925,20.4031),
+ (12,3,'Zemunska Crkva','Stara crkva sa bogatom istorijom','https://example.com/zemun_church.jpg',44.9867,20.406),
+ (13,1,'Centar Subotice','Prelepa arhitektura i istorijske zgrade u centru Subotice','https://example.com/subotica_city.jpg',46.1003,19.6669),
+ (14,2,'Palićko Jezero','Mirno jezero idealno za odmor','https://example.com/palic_lake.jpg',46.0705,19.7119),
+ (15,3,'Subotička Sinagoga','Najveća sinagoga u Srbiji','https://example.com/subotica_synagogue.jpg',46.1003,19.6669);
+
+ INSERT INTO ToursKeypoints (TourId, KeyPointId) VALUES
+ (1,1),
+ (1,2),
+ (1,3),
+ (2,4),
+ (2,5),
+ (2,6),
+ (3,7),
+ (3,8),
+ (3,9),
+ (4,10),
+ (4,11),
+ (4,12),
+ (5,13),
+ (5,14),
+ (5,15);
 
 INSERT INTO Restaurants (Id,Name,Description,Capacity,ImageUrl,Latitude,Longitude,Status,OwnerId) VALUES 
  (1,'Restoran Kalemegdan','Tradicionalna srpska hrana sa pogledom na grad',100,'https://example.com/kalemegdan_restaurant.jpg',44.8176,20.4633,'objavljeno',7),

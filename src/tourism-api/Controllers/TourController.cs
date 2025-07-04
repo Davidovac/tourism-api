@@ -10,11 +10,13 @@ public class TourController : ControllerBase
 {
     private readonly TourRepository _tourRepo;
     private readonly UserRepository _userRepo;
+    private readonly TourKeyPointRepository _tourKPRepo;
 
     public TourController(IConfiguration configuration)
     {
         _tourRepo = new TourRepository(configuration);
         _userRepo = new UserRepository(configuration);
+        _tourKPRepo = new TourKeyPointRepository(configuration);
     }
 
     [HttpGet]
@@ -80,7 +82,6 @@ public class TourController : ControllerBase
         {
             return BadRequest("Invalid tour data.");
         }
-
         try
         {
             User user = _userRepo.GetById(newTour.GuideId);
@@ -90,6 +91,12 @@ public class TourController : ControllerBase
             }
 
             Tour createdTour = _tourRepo.Create(newTour);
+            if (newTour.KeyPoints != null && newTour.KeyPoints.Count != 0)
+            {
+                createdTour.KeyPoints = newTour.KeyPoints;
+                _tourKPRepo.AddKeyPointToTour(createdTour);
+            }
+            
             return Ok(createdTour);
         }
         catch (Exception ex)
@@ -114,6 +121,12 @@ public class TourController : ControllerBase
             {
                 return NotFound();
             }
+            if (tour.KeyPoints != null || tour.KeyPoints.Count != 0)
+            {
+                updatedTour.KeyPoints = tour.KeyPoints;
+                _tourKPRepo.ReplaceKeyPointsInTour(updatedTour);
+            }
+
             return Ok(updatedTour);
         }
         catch (Exception ex)

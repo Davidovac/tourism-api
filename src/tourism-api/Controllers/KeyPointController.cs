@@ -4,7 +4,7 @@ using tourism_api.Repositories;
 
 namespace tourism_api.Controllers;
 
-[Route("api/tours/{tourId}/key-points")]
+[Route("api/key-points")]
 [ApiController]
 public class KeyPointController : ControllerBase
 {
@@ -17,8 +17,30 @@ public class KeyPointController : ControllerBase
         _keyPointRepo = new KeyPointRepository(configuration);
     }
 
+    [HttpGet]
+    public ActionResult GetPaged([FromQuery] int page = 1)
+    {
+        List<string> validOrderByColumns = new List<string> { "Name", "Description", "DateTime", "MaxGuests" }; // Lista dozvoljenih kolona za sortiranje
+        try
+        {
+            List<KeyPoint> keyPoints = _keyPointRepo.GetPagedTourless(page, 4);
+            int totalCount = _keyPointRepo.CountAllTourless();
+            Object result = new
+            {
+                Data = keyPoints,
+                TotalCount = totalCount
+            };
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return Problem("An error occurred while fetching tours.");
+        }
+    }
+
+
     [HttpPost]
-    public ActionResult<KeyPoint> Create(int tourId, [FromBody] KeyPoint newKeyPoint)
+    public ActionResult<KeyPoint> Create([FromBody] KeyPoint newKeyPoint)
     {
         if (!newKeyPoint.IsValid())
         {
@@ -27,13 +49,6 @@ public class KeyPointController : ControllerBase
 
         try
         {
-            Tour tour = _tourRepo.GetById(tourId);
-            if (tour == null)
-            {
-                return NotFound($"Tour with ID {tourId} not found.");
-            }
-
-            newKeyPoint.TourId = tourId;
             KeyPoint createdKeyPoint = _keyPointRepo.Create(newKeyPoint);
             return Ok(createdKeyPoint);
         }
