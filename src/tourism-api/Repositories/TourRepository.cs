@@ -1,4 +1,6 @@
-﻿using Microsoft.Data.Sqlite;
+﻿using System.Security.Cryptography;
+using System.Text;
+using Microsoft.Data.Sqlite;
 using tourism_api.Domain;
 
 namespace tourism_api.Repositories;
@@ -183,7 +185,8 @@ public class TourRepository
                            kp.ImageUrl AS KeyPointImageUrl, kp.Latitude, kp.Longitude
                     FROM Tours t
                     INNER JOIN Users u ON t.GuideId = u.Id
-                    LEFT JOIN KeyPoints kp ON kp.TourId = t.Id
+                    LEFT JOIN ToursKeyPoints tkp ON tkp.TourId = t.Id
+                    LEFT JOIN KeyPoints kp ON tkp.KeyPointId = kp.Id
                     WHERE t.Id = @Id";
             using SqliteCommand command = new SqliteCommand(query, connection);
             command.Parameters.AddWithValue("@Id", id);
@@ -223,7 +226,6 @@ public class TourRepository
                         ImageUrl = reader["KeyPointImageUrl"].ToString(),
                         Latitude = Convert.ToInt32(reader["Latitude"]),
                         Longitude = Convert.ToInt32(reader["Longitude"]),
-                        TourId = Convert.ToInt32(reader["Id"])
                     };
                     tour.KeyPoints.Add(keyPoint);
                 }
@@ -260,17 +262,20 @@ public class TourRepository
             using SqliteConnection connection = new SqliteConnection(_connectionString);
             connection.Open();
 
-            string query = @"
-                    INSERT INTO Tours (Name, Description, DateTime, MaxGuests, Status, GuideId)
-                    VALUES (@Name, @Description, @DateTime, @MaxGuests, @Status, @GuideId);
-                    SELECT LAST_INSERT_ROWID();";
-            using SqliteCommand command = new SqliteCommand(query, connection);
+            using SqliteCommand command = connection.CreateCommand();
+            var query = new StringBuilder();
+
+            query.Append(@"
+                    INSERT INTO Tours (Name, Description, DateTime, MaxGuests, Status, GuideID) VALUES
+                   (@Name, @Description, @DateTime, @MaxGuests, @Status, @GuideId);
+                    SELECT LAST_INSERT_ROWID();");
             command.Parameters.AddWithValue("@Name", tour.Name);
             command.Parameters.AddWithValue("@Description", tour.Description);
             command.Parameters.AddWithValue("@DateTime", tour.DateTime);
             command.Parameters.AddWithValue("@MaxGuests", tour.MaxGuests);
             command.Parameters.AddWithValue("@Status", tour.Status);
             command.Parameters.AddWithValue("@GuideId", tour.GuideId);
+            command.CommandText = query.ToString();
 
             tour.Id = Convert.ToInt32(command.ExecuteScalar());
 
@@ -305,19 +310,22 @@ public class TourRepository
             using SqliteConnection connection = new SqliteConnection(_connectionString);
             connection.Open();
 
-            string query = @"
+            using SqliteCommand command = connection.CreateCommand();
+            var query = new StringBuilder();
+
+            query.Append(@"
                     UPDATE Tours 
                     SET Name = @Name, Description = @Description, DateTime = @DateTime, 
                         MaxGuests = @MaxGuests, Status = @Status
-                    WHERE Id = @Id";
-            using SqliteCommand command = new SqliteCommand(query, connection);
+                    WHERE Id = @Id;");
+
             command.Parameters.AddWithValue("@Id", tour.Id);
             command.Parameters.AddWithValue("@Name", tour.Name);
             command.Parameters.AddWithValue("@Description", tour.Description);
             command.Parameters.AddWithValue("@DateTime", tour.DateTime);
             command.Parameters.AddWithValue("@MaxGuests", tour.MaxGuests);
             command.Parameters.AddWithValue("@Status", tour.Status);
-
+            command.CommandText = query.ToString();
             int affectedRows = command.ExecuteNonQuery();
             return affectedRows > 0 ? tour : null;
         }

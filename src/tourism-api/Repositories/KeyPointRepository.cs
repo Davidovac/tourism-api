@@ -12,6 +12,106 @@ public class KeyPointRepository
         _connectionString = configuration["ConnectionString:SQLiteConnection"];
     }
 
+    public List<KeyPoint> GetPagedTourless(int page, int pageSize)
+    {
+        List<KeyPoint> keyPoints = new List<KeyPoint>();
+
+        try
+        {
+            using SqliteConnection connection = new SqliteConnection(_connectionString);
+            connection.Open();
+
+            string query = @$"
+                    SELECT Id, OrderPosition, Name, Description, ImageUrl, Latitude, Longitude
+                    FROM (SELECT k.Id, k.OrderPosition, k.Name, k.Description, k.ImageUrl, k.Latitude, k.Longitude, tk.KeyPointId
+                    FROM KeyPoints k
+                    LEFT JOIN ToursKeyPoints tk ON k.Id = tk.KeyPointId
+                    WHERE tk.KeyPointId IS NULL
+                    ORDER BY k.Id)
+                    LIMIT @PageSize OFFSET @Offset";
+            using SqliteCommand command = new SqliteCommand(query, connection);
+            command.Parameters.AddWithValue("@PageSize", pageSize);
+            command.Parameters.AddWithValue("@Offset", pageSize * (page - 1));
+
+            using SqliteDataReader reader = command.ExecuteReader();
+
+            while (reader.Read())
+            {
+                keyPoints.Add(new KeyPoint
+                {
+                    Id = Convert.ToInt32(reader["Id"]),
+                    Order = Convert.ToInt32(reader["OrderPosition"]),
+                    Name = reader["Name"].ToString(),
+                    Description = reader["Description"].ToString(),
+                    ImageUrl = reader["ImageUrl"].ToString(),
+                    Latitude = Convert.ToDouble(reader["Latitude"]),
+                    Longitude = Convert.ToDouble(reader["Longitude"]),
+                });
+            }
+
+            return keyPoints;
+        }
+        catch (SqliteException ex)
+        {
+            Console.WriteLine($"Greška pri konekciji ili izvršavanju neispravnih SQL upita: {ex.Message}");
+            throw;
+        }
+        catch (FormatException ex)
+        {
+            Console.WriteLine($"Greška u konverziji podataka iz baze: {ex.Message}");
+            throw;
+        }
+        catch (InvalidOperationException ex)
+        {
+            Console.WriteLine($"Konekcija nije otvorena ili je otvorena više puta: {ex.Message}");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Neočekivana greška: {ex.Message}");
+            throw;
+        }
+    }
+
+    public int CountAllTourless()
+    {
+        try
+        {
+            using SqliteConnection connection = new SqliteConnection(_connectionString);
+            connection.Open();
+
+            string query = @$"SELECT COUNT(*)
+                            FROM(SELECT k.Id, k.OrderPosition, k.Name, k.Description, k.ImageUrl, k.Latitude, k.Longitude, tk.KeyPointId
+                            FROM KeyPoints k
+                            LEFT JOIN ToursKeyPoints tk ON k.Id = tk.KeyPointId
+                            WHERE tk.KeyPointId IS NULL);";
+            using SqliteCommand command = new SqliteCommand(query, connection);
+
+            return Convert.ToInt32(command.ExecuteScalar());
+        }
+        catch (SqliteException ex)
+        {
+            Console.WriteLine($"Greška pri konekciji ili izvršavanju neispravnih SQL upita: {ex.Message}");
+            throw;
+        }
+        catch (FormatException ex)
+        {
+            Console.WriteLine($"Greška u konverziji podataka iz baze: {ex.Message}");
+            throw;
+        }
+        catch (InvalidOperationException ex)
+        {
+            Console.WriteLine($"Konekcija nije otvorena ili je otvorena više puta: {ex.Message}");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Neočekivana greška: {ex.Message}");
+            throw;
+        }
+    }
+
+
     public KeyPoint Create(KeyPoint keyPoint)
     {
         try
@@ -20,8 +120,8 @@ public class KeyPointRepository
             connection.Open();
 
             string query = @"
-                    INSERT INTO KeyPoints (OrderPosition, Name, Description, ImageUrl, Latitude, Longitude, TourId)
-                    VALUES (@Order, @Name, @Description, @ImageUrl, @Latitude, @Latitude, @TourId);
+                    INSERT INTO KeyPoints (OrderPosition, Name, Description, ImageUrl, Latitude, Longitude)
+                    VALUES (@Order, @Name, @Description, @ImageUrl, @Latitude, @Latitude);
                     SELECT LAST_INSERT_ROWID();";
             using SqliteCommand command = new SqliteCommand(query, connection);
             command.Parameters.AddWithValue("@Order", keyPoint.Order);
@@ -30,7 +130,6 @@ public class KeyPointRepository
             command.Parameters.AddWithValue("@ImageUrl", keyPoint.ImageUrl);
             command.Parameters.AddWithValue("@Latitude", keyPoint.Latitude);
             command.Parameters.AddWithValue("@Longitude", keyPoint.Longitude);
-            command.Parameters.AddWithValue("@TourId", keyPoint.TourId);
 
             keyPoint.Id = Convert.ToInt32(command.ExecuteScalar());
 

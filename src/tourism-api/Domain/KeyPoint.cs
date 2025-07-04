@@ -8,7 +8,6 @@ public class KeyPoint
     public string ImageUrl { get; set; }
     public double Latitude { get; set; }
     public double Longitude { get; set; }
-    public int TourId { get; set; }
 
     public bool IsValid()
     {
