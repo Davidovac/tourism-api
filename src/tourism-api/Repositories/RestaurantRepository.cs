@@ -111,41 +111,70 @@ public class RestaurantRepository
         }
     }
 
-    public List<Restaurant> GetByOwner(int ownerId)
+    public int CountByOwner(int ownerId)
+    {
+        try
+        {
+            using var connection = new SqliteConnection(_connectionString);
+            connection.Open();
+
+            string query = "SELECT COUNT(*) FROM Restaurants WHERE OwnerId = @OwnerId";
+            using var command = new SqliteCommand(query, connection);
+            command.Parameters.AddWithValue("@OwnerId", ownerId);
+
+            return Convert.ToInt32(command.ExecuteScalar());
+        }
+        catch (SqliteException ex)
+        {
+            Console.WriteLine($"Greška pri konekciji ili izvršavanju neispravnih SQL upita: {ex.Message}");
+            throw;
+        }
+        catch (FormatException ex)
+        {
+            Console.WriteLine($"Greška u konverziji podataka iz baze: {ex.Message}");
+            throw;
+        }
+        catch (InvalidOperationException ex)
+        {
+            Console.WriteLine($"Konekcija nije otvorena ili je otvorena više puta: {ex.Message}");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Neočekivana greška: {ex.Message}");
+            throw;
+        }
+    }
+
+    public List<Restaurant> GetByOwner(int ownerId, int page, int pageSize, string orderBy, string orderDirection)
     {
         List<Restaurant> restaurants = new List<Restaurant>();
 
         try
         {
-            using SqliteConnection connection = new SqliteConnection(_connectionString);
+            using var connection = new SqliteConnection(_connectionString);
             connection.Open();
 
-            string query = @"
-                    SELECT r.Id, r.Name, r.Description, r.Capacity, r.ImageUrl, r.Longitude, r.Latitude, r.Status
-                    FROM Restaurants r
-                    INNER JOIN Users u ON r.OwnerId = u.Id
-                    WHERE r.OwnerId = @OwnerId";
-            using SqliteCommand command = new SqliteCommand(query, connection);
-            command.Parameters.AddWithValue("@OwnerId", ownerId);
+            string query = $@"
+                SELECT r.Id, r.Name, r.Description, r.Capacity, r.ImageUrl, r.Latitude, r.Longitude, r.Status,
+                       u.Id AS OwnerId, u.Username
+                FROM Restaurants r
+                INNER JOIN Users u ON r.OwnerId = u.Id
+                WHERE r.OwnerId = @OwnerId
+                ORDER BY {orderBy} {orderDirection}
+                LIMIT @PageSize OFFSET @Offset";
 
-            using SqliteDataReader reader = command.ExecuteReader();
+            using var command = new SqliteCommand(query, connection);
+            command.Parameters.AddWithValue("@OwnerId", ownerId);
+            command.Parameters.AddWithValue("@PageSize", pageSize);
+            command.Parameters.AddWithValue("@Offset", pageSize * (page - 1));
+
+            using var reader = command.ExecuteReader();
 
             while (reader.Read())
             {
-                restaurants.Add(new Restaurant
-                {
-                    Id = Convert.ToInt32(reader["Id"]),
-                    Name = reader["Name"].ToString(),
-                    Description = reader["Description"].ToString(),
-                    Capacity = Convert.ToInt32(reader["Capacity"]),
-                    ImageUrl = reader["ImageUrl"].ToString(),
-                    Longitude = Convert.ToDouble(reader["Longitude"]),
-                    Latitude = Convert.ToDouble(reader["Latitude"]),
-                    Status = reader["Status"].ToString(),
-                    OwnerId = ownerId
-                });
+                restaurants.Add(ReadRestaurantFromReader(reader));
             }
-
 
             return restaurants;
         }
@@ -377,5 +406,26 @@ public class RestaurantRepository
             Console.WriteLine($"Neočekivana greška: {ex.Message}");
             throw;
         }
+    }
+
+    private Restaurant ReadRestaurantFromReader(SqliteDataReader reader)
+    {
+        return new Restaurant
+        {
+            Id = Convert.ToInt32(reader["Id"]),
+            Name = reader["Name"].ToString(),
+            Description = reader["Description"].ToString(),
+            Capacity = Convert.ToInt32(reader["Capacity"]),
+            ImageUrl = reader["ImageUrl"].ToString(),
+            Latitude = Convert.ToDouble(reader["Latitude"]),
+            Longitude = Convert.ToDouble(reader["Longitude"]),
+            Status = reader["Status"].ToString(),
+            OwnerId = Convert.ToInt32(reader["OwnerId"]),
+            Owner = new User
+            {
+                Id = Convert.ToInt32(reader["OwnerId"]),
+                Username = reader["Username"].ToString()
+            }
+        };
     }
 }
