@@ -8,9 +8,11 @@ namespace tourism_api.Repositories;
 public class TourRepository
 {
     private readonly string _connectionString;
+    private readonly TourKeyPointRepository _tourKPRepo;
     public TourRepository(IConfiguration configuration)
     {
         _connectionString = configuration["ConnectionString:SQLiteConnection"];
+        _tourKPRepo = new TourKeyPointRepository(configuration);
     }
 
     public List<Tour> GetPaged(int page, int pageSize, string orderBy, string orderDirection)
@@ -25,8 +27,9 @@ public class TourRepository
             string query = @$"
                     SELECT t.Id, t.Name, t.Description, t.DateTime, t.MaxGuests, t.Status,
                            u.Id AS GuideId, u.Username 
-                    FROM Tours t 
+                    FROM Tours t
                     INNER JOIN Users u ON t.GuideId = u.Id
+                    WHERE t.Status = 'objavljeno'
                     ORDER BY {orderBy} {orderDirection} LIMIT @PageSize OFFSET @Offset";
             using SqliteCommand command = new SqliteCommand(query, connection);
             command.Parameters.AddWithValue("@PageSize", pageSize);
@@ -36,6 +39,10 @@ public class TourRepository
 
             while (reader.Read())
             {
+                if (reader["Status"].ToString() != "objavljeno")
+                {
+                    continue;
+                }
                 tours.Add(new Tour
                 {
                     Id = Convert.ToInt32(reader["Id"]),
@@ -49,7 +56,8 @@ public class TourRepository
                     {
                         Id = Convert.ToInt32(reader["GuideId"]),
                         Username = reader["Username"].ToString()
-                    }
+                    },
+                    KeyPoints = _tourKPRepo.GetByTour(Convert.ToInt32(reader["Id"]))
                 });
             }
 
