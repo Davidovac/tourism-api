@@ -6,7 +6,7 @@ public class Restaurant
     public string Name { get; set; }
     public string Description { get; set; }
     public int Capacity { get; set; }
-    public string ImageUrl { get; set; }
+    public List<string> ImageUrls { get; set; } = new List<string>();
     public double Latitude { get; set; }
     public double Longitude { get; set; }
     public string? Status { get; set; } = "u pripremi";
@@ -16,7 +16,11 @@ public class Restaurant
 
     public bool IsValid()
     {
-        return !string.IsNullOrWhiteSpace(Name) && !string.IsNullOrWhiteSpace(Description)
-            && !string.IsNullOrWhiteSpace(ImageUrl) && Capacity > 0;
+        return !string.IsNullOrWhiteSpace(Name)
+            && !string.IsNullOrWhiteSpace(Description)
+            && Capacity > 0
+            && ImageUrls != null
+            && ImageUrls.Count > 0
+            && ImageUrls.All(url => !string.IsNullOrWhiteSpace(url));
     }
 }
