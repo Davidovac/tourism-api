@@ -37,5 +37,4 @@ public class UserController : ControllerBase
             return Problem("An unexpected error occurred while processing login request.");
         }
     }
-
 }

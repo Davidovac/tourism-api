@@ -238,6 +238,10 @@ public class TourRepository
                     tour.KeyPoints.Add(keyPoint);
                 }
             }
+            if (tour != null && tour.Status != "objavljeno")
+            {
+                return null;
+            }
 
             return tour;
         }
