@@ -59,6 +59,25 @@ CREATE TABLE Meals (
     FOREIGN KEY (RestaurantId) REFERENCES Restaurants(Id) ON DELETE CASCADE
 );
 
+CREATE TABLE RestaurantImages (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    RestaurantId INTEGER NOT NULL,
+    ImageUrl TEXT NOT NULL,
+    FOREIGN KEY (RestaurantId) REFERENCES Restaurants(Id) ON DELETE CASCADE
+);
+
+INSERT INTO RestaurantImages (RestaurantId, ImageUrl) VALUES
+(1, 'https://example.com/kalemegdan_restaurant_1.jpg'),
+(1, 'https://example.com/kalemegdan_restaurant_2.jpg'),
+(2, 'https://example.com/novi_sad_restaurant_1.jpg'),
+(2, 'https://example.com/novi_sad_restaurant_2.jpg'),
+(3, 'https://example.com/nis_restaurant_1.jpg'),
+(4, 'https://example.com/zemun_restaurant_1.jpg'),
+(4, 'https://example.com/zemun_restaurant_2.jpg'),
+(4, 'https://example.com/zemun_restaurant_3.jpg'),
+(5, 'https://example.com/subotica_restaurant_1.jpg'),
+(5, 'https://example.com/subotica_restaurant_2.jpg');
+
 INSERT INTO Users (Id,Username,Password,Role) VALUES 
  (1,'turista1','turista1','turista'),
  (2,'turista2','turista2','turista'),
