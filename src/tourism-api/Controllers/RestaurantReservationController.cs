@@ -6,13 +6,13 @@ namespace tourism_api.Controllers;
 
     [Route("api/restaurant/reservations")]
     [ApiController]
-    public class ReservationController : ControllerBase
+    public class RestaurantReservationController : ControllerBase
     {
         private readonly RestaurantReservationRepository _reservationRepo;
         private readonly RestaurantRepository _restaurantRepo;
         private readonly UserRepository _userRepo;
 
-        public ReservationController(IConfiguration configuration)
+        public RestaurantReservationController(IConfiguration configuration)
         {
             _reservationRepo = new RestaurantReservationRepository(configuration);
             _restaurantRepo = new RestaurantRepository(configuration);
