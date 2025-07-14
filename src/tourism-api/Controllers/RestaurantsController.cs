@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Collections.Generic;
+using Microsoft.AspNetCore.Mvc;
 using tourism_api.Domain;
 using tourism_api.Repositories;
 
@@ -22,7 +23,7 @@ public class RestaurantController : ControllerBase
     {
         if (ownerId > 0)
         {
-            var restaurants = _restaurantRepo.GetByOwner(ownerId, page, pageSize, orderBy, orderDirection);
+            List<Restaurant> restaurants = _restaurantRepo.GetByOwner(ownerId, page, pageSize, orderBy, orderDirection);
             int totalCount = _restaurantRepo.CountByOwner(ownerId);
 
             return Ok(new
@@ -146,5 +147,35 @@ public class RestaurantController : ControllerBase
             return Problem("An error occurred while deleting the restaurant.");
         }
     }
+
+    [HttpPost("{restaurantId}/ratings")]
+    public ActionResult AddRating(int restaurantId, [FromBody] RestaurantRating rating)
+    {
+        try
+        {
+            if (rating.Rating < 1 || rating.Rating > 5)
+                return BadRequest("Rating must be between 1 and 5.");
+
+            Restaurant restaurant = _restaurantRepo.GetById(restaurantId);
+            if (restaurant == null)
+                return NotFound($"Restaurant with ID {restaurantId} not found.");
+
+            User user = _userRepo.GetById(rating.UserId);
+            if (user == null)
+                return NotFound($"User with ID {rating.UserId} not found.");
+
+            rating.RestaurantId = restaurantId;
+            rating.CreatedAt = DateTime.UtcNow;
+
+            _restaurantRepo.AddRating(rating);
+
+            return Ok("Rating submitted.");
+        }
+        catch (Exception)
+        {
+            return Problem("An error occurred while submitting the rating.");
+        }
+    }
+
 }
 

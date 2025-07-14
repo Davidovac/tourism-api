@@ -38,6 +38,7 @@ public class RestaurantRepository
             {
                 Restaurant restaurant = ReadRestaurantFromReader(reader);
                 restaurant.ImageUrls = GetImageUrls(connection, restaurant.Id);
+                restaurant.Ratings = GetRatings(connection, restaurant.Id);
                 restaurants.Add(restaurant);
             }
 
@@ -183,7 +184,8 @@ public class RestaurantRepository
                             Id = Convert.ToInt32(sqlReader["OwnerId"]),
                             Username = sqlReader["Username"].ToString()
                         },
-                        ImageUrls = new List<string>()
+                        ImageUrls = new List<string>(),
+                        Ratings = GetRatings(sqlConnection, restaurantId)
                     };
 
                     restaurantMap.Add(restaurantId, restaurant);
@@ -282,6 +284,7 @@ public class RestaurantRepository
                 } while (reader.Read());
 
                 restaurant.ImageUrls = GetImageUrls(connection, id);
+                restaurant.Ratings = GetRatings(connection, id);
             }
 
             return restaurant;
@@ -502,6 +505,69 @@ public class RestaurantRepository
             using SqliteCommand deleteCommand = new SqliteCommand("DELETE FROM RestaurantImages WHERE RestaurantId = @RestaurantId", connection);
             deleteCommand.Parameters.AddWithValue("@RestaurantId", restaurantId);
             deleteCommand.ExecuteNonQuery();
+        }
+
+        public void AddRating(RestaurantRating rating)
+        {
+            try
+            {
+                using SqliteConnection connection = new SqliteConnection(_connectionString);
+                connection.Open();
+
+                string query = @"
+                INSERT INTO RestaurantRatings (RestaurantId, UserId, Rating, Comment, CreatedAt)
+                VALUES (@RestaurantId, @UserId, @Rating, @Comment, @CreatedAt)";
+
+                using SqliteCommand command = new SqliteCommand(query, connection);
+                command.Parameters.AddWithValue("@RestaurantId", rating.RestaurantId);
+                command.Parameters.AddWithValue("@UserId", rating.UserId);
+                command.Parameters.AddWithValue("@Rating", rating.Rating);
+                command.Parameters.AddWithValue("@Comment", (object?)rating.Comment ?? DBNull.Value);
+                command.Parameters.AddWithValue("@CreatedAt", rating.CreatedAt.ToString("s"));
+
+                command.ExecuteNonQuery();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Greška pri dodavanju ocene: {ex.Message}");
+                throw;
+            }
+        }
+
+        private List<RestaurantRating> GetRatings(SqliteConnection connection, int restaurantId)
+        {
+            List<RestaurantRating> ratings = new List<RestaurantRating>();
+
+            string query = @"
+            SELECT rr.Id, rr.RestaurantId, rr.UserId, rr.Rating, rr.Comment, rr.CreatedAt, u.Username
+            FROM RestaurantRatings rr
+            INNER JOIN Users u ON rr.UserId = u.Id
+            WHERE rr.RestaurantId = @RestaurantId";
+
+            using var command = new SqliteCommand(query, connection);
+            command.Parameters.AddWithValue("@RestaurantId", restaurantId);
+
+            using SqliteDataReader reader = command.ExecuteReader();
+
+            while (reader.Read())
+            {
+                ratings.Add(new RestaurantRating
+                {
+                    Id = Convert.ToInt32(reader["Id"]),
+                    RestaurantId = Convert.ToInt32(reader["RestaurantId"]),
+                    UserId = Convert.ToInt32(reader["UserId"]),
+                    Rating = Convert.ToInt32(reader["Rating"]),
+                    Comment = reader["Comment"]?.ToString(),
+                    CreatedAt = DateTime.Parse(reader["CreatedAt"].ToString()),
+                    User = new User
+                    {
+                        Id = Convert.ToInt32(reader["UserId"]),
+                        Username = reader["Username"].ToString()
+                    }
+                });
+            }
+
+            return ratings;
         }
 
 }

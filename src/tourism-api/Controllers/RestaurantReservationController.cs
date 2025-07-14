@@ -24,13 +24,13 @@ namespace tourism_api.Controllers;
         {
             try
             {
-                var restaurant = _restaurantRepo.GetById(request.RestaurantId);
+                Restaurant restaurant = _restaurantRepo.GetById(request.RestaurantId);
                 if (restaurant == null)
                 {
                     return NotFound($"Restoran sa ID {request.RestaurantId} ne postoji.");
                 }
 
-                var user = _userRepo.GetById(request.UserId);
+                User user = _userRepo.GetById(request.UserId);
                 if (user == null)
                 {
                     return NotFound($"Korisnik sa ID {request.UserId} ne postoji.");
@@ -56,7 +56,7 @@ namespace tourism_api.Controllers;
                     });
                 }
 
-                var reservation = new RestaurantReservation
+                RestaurantReservation reservation = new RestaurantReservation
                 {
                     RestaurantId = request.RestaurantId,
                     UserId = request.UserId,
@@ -79,7 +79,7 @@ namespace tourism_api.Controllers;
         {
             try
             {
-                var reservation = _reservationRepo.GetById(id);
+                RestaurantReservation reservation = _reservationRepo.GetById(id);
                 if (reservation == null)
                 {
                     return NotFound($"Rezervacija sa ID {id} ne postoji.");

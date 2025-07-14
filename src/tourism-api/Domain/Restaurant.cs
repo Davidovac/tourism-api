@@ -13,6 +13,8 @@ public class Restaurant
     public User? Owner { get; set; }
     public int OwnerId { get; set; }
     public List<Meal> Meals { get; set; } = new List<Meal>();
+    public List<RestaurantRating> Ratings { get; set; } = new List<RestaurantRating>();
+    public double AverageRating => Ratings.Count > 0 ? Ratings.Average(r => r.Rating) : 0;
 
     public bool IsValid()
     {
