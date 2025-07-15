@@ -1,6 +1,6 @@
 ﻿namespace tourism_api.Domain
 {
-    public class Reservation
+    public class TourReservation
     {
         public int Id { get; set; }
         public int GuestsCount { get; set; }

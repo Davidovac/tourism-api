@@ -11,6 +11,7 @@ public class Tour
     public User? Guide { get; set; }
     public int GuideId { get; set; }
     public List<KeyPoint> KeyPoints { get; set; } = new List<KeyPoint>();
+    public List<TourRating> Ratings { get; set; } = new List<TourRating>();
 
     public bool IsValid()
     {

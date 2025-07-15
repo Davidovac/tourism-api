@@ -152,4 +152,39 @@ public class TourController : ControllerBase
             return Problem("An error occurred while deleting the tour.");
         }
     }
+
+    [HttpPost("{tourId}/ratings")]
+    public ActionResult AddRating(int tourId, [FromBody] TourRating rating)
+    {
+        try
+        {
+            if (rating.Rating < 1 || rating.Rating > 5)
+            {
+                return BadRequest("Rating must be between 1 and 5.");
+            }
+                
+            Tour tour = _tourRepo.GetById(tourId);
+            if (tour == null)
+            {
+                return NotFound($"Tour with ID {tourId} not found.");
+            }
+                
+            User user = _userRepo.GetById(rating.UserId);
+            if (user == null)
+            {
+                return NotFound($"User with ID {rating.UserId} not found.");
+            }
+                
+            rating.TourId = tourId;
+            rating.CreatedAt = DateTime.UtcNow;
+
+            _tourRepo.AddRating(rating);
+
+            return Ok("Rating added.");
+        }
+        catch (Exception)
+        {
+            return Problem("An error occurred while adding the rating.");
+        }
+    }
 }

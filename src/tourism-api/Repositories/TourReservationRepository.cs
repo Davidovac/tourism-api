@@ -4,18 +4,18 @@ using tourism_api.Domain;
 
 namespace tourism_api.Repositories
 {
-    public class ReservationRepository
+    public class TourReservationRepository
     {
         private readonly string _connectionString;
 
-        public ReservationRepository(IConfiguration configuration)
+        public TourReservationRepository(IConfiguration configuration)
         {
             _connectionString = configuration["ConnectionString:SQLiteConnection"];
         }
 
-        public List<Reservation> GetByUser(int userId)
+        public List<TourReservation> GetByUser(int userId)
         {
-            List<Reservation> reservations = new List<Reservation>();
+            List<TourReservation> reservations = new List<TourReservation>();
 
             try
             {
@@ -36,7 +36,7 @@ namespace tourism_api.Repositories
 
                 while (reader.Read())
                 {
-                    reservations.Add(new Reservation
+                    reservations.Add(new TourReservation
                     {
                         Id = Convert.ToInt32(reader["Id"]),
                         GuestsCount = Convert.ToInt32(reader["GuestsCount"]),
@@ -160,7 +160,7 @@ namespace tourism_api.Repositories
         }
 
 
-        public Reservation Create(Reservation reservation)
+        public TourReservation Create(TourReservation reservation)
         {
             if (reservation == null || !reservation.Tour.IsValid())
             {
@@ -206,7 +206,7 @@ namespace tourism_api.Repositories
             }
         }
 
-        public Reservation Update(Reservation reservation)
+        public TourReservation Update(TourReservation reservation)
         {
             if (reservation == null)
             {

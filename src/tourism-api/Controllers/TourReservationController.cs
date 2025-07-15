@@ -6,15 +6,15 @@ namespace tourism_api.Controllers;
 
 [Route("api/reservations")]
 [ApiController]
-public class ReservationController : ControllerBase
+public class TourReservationController : ControllerBase
 {
-    private readonly ReservationRepository _reservationRepo;
+    private readonly TourReservationRepository _reservationRepo;
     private readonly UserRepository _userRepo;
     private readonly TourRepository _tourRepo;
 
-    public ReservationController(IConfiguration configuration)
+    public TourReservationController(IConfiguration configuration)
     {
-        _reservationRepo = new ReservationRepository(configuration);
+        _reservationRepo = new TourReservationRepository(configuration);
         _userRepo = new UserRepository(configuration);
         _tourRepo = new TourRepository(configuration);
     }
@@ -24,7 +24,7 @@ public class ReservationController : ControllerBase
     {
         try
         {
-            List<Reservation> reservations = _reservationRepo.GetByUser(userId);
+            List<TourReservation> reservations = _reservationRepo.GetByUser(userId);
             if (reservations == null || reservations.Count == 0)
             {
                 return NotFound("No reservations found for this guide.");
@@ -38,11 +38,11 @@ public class ReservationController : ControllerBase
     }
 
     [HttpPost]
-    public ActionResult Create([FromBody] Reservation newReservation)
+    public ActionResult Create([FromBody] TourReservation newReservation)
     {
         try
         {
-            Reservation? retrievedReservation = null;
+            TourReservation? retrievedReservation = null;
             User user = _userRepo.GetById(newReservation.UserId);
             if (user == null)
             {
