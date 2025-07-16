@@ -57,7 +57,8 @@ public class TourRepository
                         Id = Convert.ToInt32(reader["GuideId"]),
                         Username = reader["Username"].ToString()
                     },
-                    KeyPoints = _tourKPRepo.GetByTour(Convert.ToInt32(reader["Id"]))
+                    KeyPoints = _tourKPRepo.GetByTour(Convert.ToInt32(reader["Id"])),
+                    Ratings = GetRatings(connection, Convert.ToInt32(reader["Id"]))
                 });
             }
 
@@ -149,7 +150,8 @@ public class TourRepository
                     DateTime = Convert.ToDateTime(reader["DateTime"]),
                     MaxGuests = Convert.ToInt32(reader["MaxGuests"]),
                     Status = reader["Status"].ToString(),
-                    GuideId = Convert.ToInt32(reader["GuideId"])
+                    GuideId = Convert.ToInt32(reader["GuideId"]),
+                    Ratings = GetRatings(connection, Convert.ToInt32(reader["Id"]))
                 });
             }
 
@@ -219,7 +221,8 @@ public class TourRepository
                             Id = Convert.ToInt32(reader["GuideId"]),
                             Username = reader["Username"].ToString()
                         },
-                        KeyPoints = new List<KeyPoint>()
+                        KeyPoints = new List<KeyPoint>(),
+                        Ratings = GetRatings(connection, Convert.ToInt32(reader["Id"]))
                     };
                 }
 
@@ -373,6 +376,98 @@ public class TourRepository
 
             return rowsAffected > 0;
         }
+        catch (SqliteException ex)
+        {
+            Console.WriteLine($"Greška pri konekciji ili izvršavanju neispravnih SQL upita: {ex.Message}");
+            throw;
+        }
+        catch (InvalidOperationException ex)
+        {
+            Console.WriteLine($"Konekcija nije otvorena ili je otvorena više puta: {ex.Message}");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Neočekivana greška: {ex.Message}");
+            throw;
+        }
+    }
+
+    public void AddRating(TourRating rating)
+    {
+        try
+        {
+            using SqliteConnection connection = new SqliteConnection(_connectionString);
+            connection.Open();
+
+            string query = @"
+                INSERT INTO TourRatings (TourId, UserId, Rating, Comment, CreatedAt)
+                VALUES (@TourId, @UserId, @Rating, @Comment, @CreatedAt)";
+
+            using SqliteCommand command = new SqliteCommand(query, connection);
+            command.Parameters.AddWithValue("@TourId", rating.TourId);
+            command.Parameters.AddWithValue("@UserId", rating.UserId);
+            command.Parameters.AddWithValue("@Rating", rating.Rating);
+            command.Parameters.AddWithValue("@Comment", (object?)rating.Comment ?? DBNull.Value);
+            command.Parameters.AddWithValue("@CreatedAt", rating.CreatedAt.ToString("s"));
+
+            command.ExecuteNonQuery();
+        }
+        catch (SqliteException ex)
+        {
+            Console.WriteLine($"Greška pri konekciji ili izvršavanju neispravnih SQL upita: {ex.Message}");
+            throw;
+        }
+        catch (InvalidOperationException ex)
+        {
+            Console.WriteLine($"Konekcija nije otvorena ili je otvorena više puta: {ex.Message}");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Neočekivana greška: {ex.Message}");
+            throw;
+        }
+    }
+
+    public List<TourRating> GetRatings(SqliteConnection connection, int tourId)
+    {
+        List<TourRating> ratings = new List<TourRating>();
+
+        try
+        {
+            string query = @"
+            SELECT tr.Id, tr.TourId, tr.UserId, tr.Rating, tr.Comment, tr.CreatedAt, u.Username
+            FROM TourRatings tr
+            INNER JOIN Users u ON tr.UserId = u.Id
+            WHERE tr.TourId = @TourId";
+
+            using var command = new SqliteCommand(query, connection);
+            command.Parameters.AddWithValue("@TourId", tourId);
+
+            using SqliteDataReader reader = command.ExecuteReader();
+
+            while (reader.Read())
+            {
+                ratings.Add(new TourRating
+                {
+                    Id = Convert.ToInt32(reader["Id"]),
+                    TourId = Convert.ToInt32(reader["TourId"]),
+                    UserId = Convert.ToInt32(reader["UserId"]),
+                    Rating = Convert.ToInt32(reader["Rating"]),
+                    Comment = reader["Comment"]?.ToString(),
+                    CreatedAt = DateTime.Parse(reader["CreatedAt"].ToString()),
+                    User = new User
+                    {
+                        Id = Convert.ToInt32(reader["UserId"]),
+                        Username = reader["Username"].ToString()
+                    }
+                });
+            }
+
+            return ratings;
+        }
+
         catch (SqliteException ex)
         {
             Console.WriteLine($"Greška pri konekciji ili izvršavanju neispravnih SQL upita: {ex.Message}");
