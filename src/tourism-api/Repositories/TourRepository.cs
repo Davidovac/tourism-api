@@ -393,12 +393,18 @@ public class TourRepository
         }
     }
 
-    public void AddRating(TourRating rating)
+    public bool AddRating(TourRating rating)
     {
         try
         {
             using SqliteConnection connection = new SqliteConnection(_connectionString);
             connection.Open();
+
+            bool rated = RatedAlready(connection, rating.UserId, rating.TourId);
+            if (rated)
+            {
+                return rated;
+            }
 
             string query = @"
                 INSERT INTO TourRatings (TourId, UserId, Rating, Comment, CreatedAt)
@@ -412,6 +418,8 @@ public class TourRepository
             command.Parameters.AddWithValue("@CreatedAt", rating.CreatedAt.ToString("s"));
 
             command.ExecuteNonQuery();
+
+            return rated;
         }
         catch (SqliteException ex)
         {
@@ -466,6 +474,57 @@ public class TourRepository
             }
 
             return ratings;
+        }
+
+        catch (SqliteException ex)
+        {
+            Console.WriteLine($"Greška pri konekciji ili izvršavanju neispravnih SQL upita: {ex.Message}");
+            throw;
+        }
+        catch (InvalidOperationException ex)
+        {
+            Console.WriteLine($"Konekcija nije otvorena ili je otvorena više puta: {ex.Message}");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Neočekivana greška: {ex.Message}");
+            throw;
+        }
+    }
+
+    public bool RatedAlready(SqliteConnection connection, int userId, int tourId)
+    {
+        try
+        {
+            string query = @"
+            SELECT tr.Id, tr.TourId, tr.UserId, tr.Rating, tr.Comment, tr.CreatedAt
+            FROM TourRatings tr
+            WHERE tr.TourId = @TourId AND tr.UserId = @UserId";
+
+            using var command = new SqliteCommand(query, connection);
+            command.Parameters.AddWithValue("@TourId", tourId);
+            command.Parameters.AddWithValue("@UserId", userId);
+
+            using SqliteDataReader reader = command.ExecuteReader();
+
+            while (reader.Read())
+            {
+                TourRating rating = new TourRating
+                {
+                    Id = Convert.ToInt32(reader["Id"]),
+                    TourId = Convert.ToInt32(reader["TourId"]),
+                    UserId = Convert.ToInt32(reader["UserId"]),
+                    Rating = Convert.ToInt32(reader["Rating"]),
+                    Comment = reader["Comment"]?.ToString(),
+                    CreatedAt = DateTime.Parse(reader["CreatedAt"].ToString())
+                };
+                if (rating != null)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         catch (SqliteException ex)
