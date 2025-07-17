@@ -178,7 +178,12 @@ public class TourController : ControllerBase
             rating.TourId = tourId;
             rating.CreatedAt = DateTime.UtcNow;
 
-            _tourRepo.AddRating(rating);
+            bool ind = _tourRepo.AddRating(rating);
+
+            if (ind)
+            {
+                return Conflict("User already rated this tour.");
+            }
 
             return Ok("Rating added.");
         }
