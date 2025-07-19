@@ -251,5 +251,232 @@ namespace tourism_api.Repositories
                 throw;
             }
         }
+
+        public int GetTotalReservationsThisYear(int restaurantId, int ownerId)
+        {
+            try
+            {
+                using SqliteConnection connection = new SqliteConnection(_connectionString);
+                connection.Open();
+
+                DateTime startOfYear = new DateTime(DateTime.Now.Year, 1, 1);
+                DateTime endOfYear = new DateTime(DateTime.Now.Year, 12, 31);
+
+                string query = @"
+                SELECT COUNT(*)
+                FROM RestaurantReservations rr
+                INNER JOIN Restaurants r ON rr.RestaurantId = r.Id
+                WHERE rr.RestaurantId = @RestaurantId
+                AND r.OwnerId = @OwnerId
+                AND rr.Date >= @StartOfYear AND rr.Date <= @EndOfYear";
+
+                using SqliteCommand command = new SqliteCommand(query, connection);
+                command.Parameters.AddWithValue("@RestaurantId", restaurantId);
+                command.Parameters.AddWithValue("@OwnerId", ownerId);
+                command.Parameters.AddWithValue("@StartOfYear", startOfYear.ToString("yyyy-MM-dd"));
+                command.Parameters.AddWithValue("@EndOfYear", endOfYear.ToString("yyyy-MM-dd"));
+
+                return Convert.ToInt32(command.ExecuteScalar());
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting total reservations: {ex.Message}");
+                throw;
+            }
+        }
+
+        public Dictionary<string, double> GetMonthlyPercentage(int restaurantId, int ownerId, int capacity)
+        {
+            Dictionary<int, double> monthlyPercentages = new Dictionary<int, double>();
+
+            try
+            {
+                using (SqliteConnection connection = new SqliteConnection(_connectionString))
+                {
+                    connection.Open();
+
+                    DateTime now = DateTime.Now;
+                    DateTime startOfYear = new DateTime(now.Year, 1, 1);
+                    DateTime endOfYear = new DateTime(now.Year, 12, 31);
+
+                    string query = @"
+                    SELECT rr.Date, rr.NumberOfPeople
+                    FROM RestaurantReservations rr
+                    INNER JOIN Restaurants r ON rr.RestaurantId = r.Id
+                    WHERE rr.RestaurantId = @RestaurantId
+                    AND r.OwnerId = @OwnerId
+                    AND rr.Date >= @StartOfYear AND rr.Date <= @EndOfYear";
+
+                    using (SqliteCommand command = new SqliteCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@RestaurantId", restaurantId);
+                        command.Parameters.AddWithValue("@OwnerId", ownerId);
+                        command.Parameters.AddWithValue("@StartOfYear", startOfYear.ToString("yyyy-MM-dd"));
+                        command.Parameters.AddWithValue("@EndOfYear", endOfYear.ToString("yyyy-MM-dd"));
+
+                        Dictionary<int, int> guestCounts = new Dictionary<int, int>();
+
+                        using (SqliteDataReader reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                DateTime date = reader.GetDateTime(0);
+                                int guests = reader.GetInt32(1);
+                                int month = date.Month;
+
+                                if (guestCounts.ContainsKey(month))
+                                {
+                                    guestCounts[month] += guests;
+                                }
+                                else
+                                {
+                                    guestCounts[month] = guests;
+                                }
+                            }
+                        }
+
+                        for (int month = 1; month <= 12; month++)
+                        {
+                            int guests = guestCounts.ContainsKey(month) ? guestCounts[month] : 0;
+                            int daysInMonth = DateTime.DaysInMonth(now.Year, month);
+                            int maxCapacity = daysInMonth * 3 * capacity; // 3 obroka dnevno
+
+                            double percent = maxCapacity > 0 ? (double)guests / maxCapacity * 100.0 : 0;
+                            monthlyPercentages[month] = Math.Round(percent, 2);
+                        }
+                    }
+                }
+
+                // Pretvaranje brojeva meseca u nazive meseci (srpski, latinica)
+                Dictionary<string, double> resultWithMonthNames = new Dictionary<string, double>();
+                CultureInfo culture = new CultureInfo("sr-Latn");
+
+                foreach (KeyValuePair<int, double> kvp in monthlyPercentages)
+                {
+                    string monthName = culture.DateTimeFormat.GetMonthName(kvp.Key);
+                    resultWithMonthNames[monthName] = kvp.Value;
+                }
+
+                return resultWithMonthNames;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting monthly reservations count: {ex.Message}");
+                throw;
+            }
+        }
+
+
+        public Dictionary<int, int> GetTotalReservationsPerRestaurant(int ownerId)
+        {
+            Dictionary<int, int> result = new Dictionary<int, int>();
+
+            try
+            {
+                using SqliteConnection connection = new SqliteConnection(_connectionString);
+                connection.Open();
+
+                DateTime startOfYear = new DateTime(DateTime.Now.Year, 1, 1);
+                DateTime endOfYear = new DateTime(DateTime.Now.Year, 12, 31);
+
+                string query = @"
+                SELECT rr.RestaurantId, COUNT(*) AS ReservationCount
+                FROM RestaurantReservations rr
+                INNER JOIN Restaurants r ON rr.RestaurantId = r.Id
+                WHERE r.OwnerId = @OwnerId
+                AND rr.Date >= @StartOfYear AND rr.Date <= @EndOfYear
+                GROUP BY rr.RestaurantId";
+
+                using SqliteCommand command = new SqliteCommand(query, connection);
+                command.Parameters.AddWithValue("@OwnerId", ownerId);
+                command.Parameters.AddWithValue("@StartOfYear", startOfYear.ToString("yyyy-MM-dd"));
+                command.Parameters.AddWithValue("@EndOfYear", endOfYear.ToString("yyyy-MM-dd"));
+
+                using SqliteDataReader reader = command.ExecuteReader();
+
+                while (reader.Read())
+                {
+                    int restaurantId = Convert.ToInt32(reader["RestaurantId"]);
+                    int count = Convert.ToInt32(reader["ReservationCount"]);
+
+                    result[restaurantId] = count;
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting reservation counts: {ex.Message}");
+                throw;
+            }
+        }
+
+
+        public Dictionary<string, int> GetMonthlyReservationCounts(int restaurantId, int ownerId)
+        {
+            Dictionary<int, int> monthlyCounts = new Dictionary<int, int>();
+
+            try
+            {
+                using (SqliteConnection connection = new SqliteConnection(_connectionString))
+                {
+                    connection.Open();
+
+                    DateTime now = DateTime.Now;
+                    DateTime startOfYear = new DateTime(now.Year, 1, 1);
+                    DateTime endOfYear = new DateTime(now.Year, 12, 31);
+
+                    string query = @"
+                    SELECT rr.Date
+                    FROM RestaurantReservations rr
+                    INNER JOIN Restaurants r ON rr.RestaurantId = r.Id
+                    WHERE rr.RestaurantId = @RestaurantId
+                    AND r.OwnerId = @OwnerId
+                    AND rr.Date >= @StartOfYear AND rr.Date <= @EndOfYear";
+
+                    using (SqliteCommand command = new SqliteCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@RestaurantId", restaurantId);
+                        command.Parameters.AddWithValue("@OwnerId", ownerId);
+                        command.Parameters.AddWithValue("@StartOfYear", startOfYear.ToString("yyyy-MM-dd"));
+                        command.Parameters.AddWithValue("@EndOfYear", endOfYear.ToString("yyyy-MM-dd"));
+
+                        using (SqliteDataReader reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                DateTime date = reader.GetDateTime(0);
+                                int month = date.Month;
+
+                                if (monthlyCounts.ContainsKey(month))
+                                    monthlyCounts[month]++;
+                                else
+                                    monthlyCounts[month] = 1;
+                            }
+                        }
+                    }
+                }
+
+                // Pretvaranje brojeva meseca u nazive meseci (srpski, latinica)
+                Dictionary<string, int> resultWithMonthNames = new Dictionary<string, int>();
+                CultureInfo culture = new CultureInfo("sr-Latn");
+
+                for (int month = 1; month <= 12; month++)
+                {
+                    string monthName = culture.DateTimeFormat.GetMonthName(month);
+                    int count = monthlyCounts.ContainsKey(month) ? monthlyCounts[month] : 0;
+                    resultWithMonthNames[monthName] = count;
+                }
+
+                return resultWithMonthNames;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting monthly reservation counts: {ex.Message}");
+                throw;
+            }
+        }
+
+
     }
 }
