@@ -53,6 +53,11 @@ public class TourReservationController : ControllerBase
             {
                 return NotFound($"Tour with ID {newReservation.TourId} not found.");
             }
+
+            if (newReservation.GuestsCount < 1)
+            {
+                return BadRequest("You cant reserve for less than 1.");
+            }
             newReservation.Tour = tour;
 
             int? capacityLeft = _reservationRepo.GetCapacityLeft(newReservation.TourId);
