@@ -20,7 +20,7 @@ namespace tourism_api.Controllers;
         }
 
         [HttpPost]
-        public ActionResult<RestaurantReservation> CreateReservation([FromBody] ReservationRequest request)
+        public ActionResult<RestaurantReservation> CreateReservation([FromBody] RestaurantReservation request)
         {
             try
             {
@@ -155,13 +155,61 @@ namespace tourism_api.Controllers;
                 _ => throw new ArgumentException("Invalid meal time")
             };
         }
-    }
 
-    public class ReservationRequest
-    {
-        public int RestaurantId { get; set; }
-        public int UserId { get; set; }
-        public DateTime Date { get; set; }
-        public string MealTime { get; set; }
-        public int NumberOfPeople { get; set; }
-    }
+        [HttpGet("{restaurantId}/stats")]
+        public ActionResult GetRestaurantSummaryStats(int restaurantId, int ownerId)
+        {
+            try
+            {
+                var restaurant = _restaurantRepo.GetById(restaurantId);
+                //Console.WriteLine($"Kapacitet restorana {restaurantId} je {restaurant.Capacity}");
+
+                if (restaurant == null)
+                    return NotFound("Restoran ne postoji.");
+
+                //var total = _reservationRepo.GetTotalReservationsThisYear(restaurantId, ownerId);
+                var monthlyOccupancy = _reservationRepo.GetMonthlyPercentage(restaurantId, ownerId, restaurant.Capacity);
+                var monthlyCounts = _reservationRepo.GetMonthlyReservationCounts(restaurantId, ownerId);
+                var restaurantName = restaurant.Name;
+
+                return Ok(new
+                {
+                    Name = restaurantName,
+                    //TotalReservations = total,
+                    MonthlyOccupancy = monthlyOccupancy,
+                    MonthlyCounts = monthlyCounts
+                });
+            }
+            catch (Exception ex)
+            {
+                return Problem("Greška prilikom dobijanja statistike.");
+            }
+        }
+
+        [HttpGet("stats/all")]
+            public ActionResult GetAllRestaurantStats(int ownerId)
+            {
+                try
+                {
+                    var totals = _reservationRepo.GetTotalReservationsPerRestaurant(ownerId);
+                    var restaurants = _restaurantRepo.GetByOwner(ownerId, 1, int.MaxValue, "Name", "ASC");
+
+                    var result = restaurants.Select(r => new
+                    {
+                        r.Id,
+                        r.Name,
+                        TotalReservations = totals.ContainsKey(r.Id) ? totals[r.Id] : 0
+                    })
+                    .OrderByDescending(r => r.TotalReservations)
+                    .ToList();
+
+                    return Ok(result);
+                }
+                catch (Exception ex)
+                {
+                    return Problem("Greška prilikom dobijanja ukupnih statistika.");
+                }
+            }
+
+
+}
