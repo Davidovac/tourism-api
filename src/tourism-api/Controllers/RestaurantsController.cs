@@ -177,5 +177,21 @@ public class RestaurantController : ControllerBase
         }
     }
 
+    [HttpGet("all")]
+    public ActionResult GetAllPublished()
+    {
+        try
+        {
+            List<Restaurant> restaurants = _restaurantRepo.GetAllPublished();
+
+            return Ok(restaurants);
+        }
+        catch (Exception ex)
+        {
+            return Problem("Došlo je do greške pri učitavanju restorana.");
+        }
+    }
+
+
 }
 
