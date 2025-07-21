@@ -570,4 +570,41 @@ public class RestaurantRepository
             return ratings;
         }
 
+        public List<Restaurant> GetAllPublished()
+        {
+            List<Restaurant> restaurants = new List<Restaurant>();
+
+            try
+            {
+                using SqliteConnection connection = new SqliteConnection(_connectionString);
+                connection.Open();
+
+                string query = @"
+                SELECT r.Id, r.Name, r.Description, r.Capacity, r.Latitude, r.Longitude, r.Status,
+                       u.Id AS OwnerId, u.Username
+                FROM Restaurants r
+                INNER JOIN Users u ON r.OwnerId = u.Id
+                WHERE r.Status = 'objavljeno'";
+
+                using SqliteCommand command = new SqliteCommand(query, connection);
+                using SqliteDataReader reader = command.ExecuteReader();
+
+                while (reader.Read())
+                {
+                    Restaurant restaurant = ReadRestaurantFromReader(reader);
+                    restaurant.ImageUrls = GetImageUrls(connection, restaurant.Id);
+                    restaurant.Ratings = GetRatings(connection, restaurant.Id);
+                    restaurants.Add(restaurant);
+                }
+
+                return restaurants;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Greška pri učitavanju svih restorana: {ex.Message}");
+                throw;
+            }
+        }
+
+
 }
