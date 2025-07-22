@@ -192,4 +192,23 @@ public class TourController : ControllerBase
             return Problem("An error occurred while adding the rating.");
         }
     }
+
+    [HttpGet("stats")]
+    public ActionResult GetTourStats([FromQuery] DateTime? from, DateTime? to, int guideId = 0)
+    {
+        try
+        {
+            User? guide = _userRepo.GetById(guideId);
+            if (guide == null)
+            {
+                return NotFound($"Guide with ID {guideId} not found.");
+            }
+            ToursStatsData stats = _tourRepo.GetTourStatsByGuide(guideId, from, to);
+            return Ok(stats);
+        }
+        catch (Exception ex)
+        {
+            return Problem("An error occurred while fetching tour statistics.");
+        }
+    }
 }

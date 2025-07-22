@@ -543,4 +543,269 @@ public class TourRepository
             throw;
         }
     }
+
+    public ToursStatsData? GetTourStatsByGuide(int guideId, DateTime? from, DateTime? to)
+    {
+        try
+        {
+            ToursStatsData? stats = null;
+            using SqliteConnection connection = new SqliteConnection(_connectionString);
+            connection.Open();
+            stats = new ToursStatsData
+            {
+                MostReserved = GetMostReserved(connection, guideId, from, to),
+                LeastReserved = GetLeastReserved(connection, guideId, from, to),
+                MostFilled = GetMostFilled(connection, guideId, from, to),
+                LeastFilled = GetLeastFilled(connection, guideId, from, to)
+            };
+            return stats;
+        }
+        catch (SqliteException ex)
+        {
+            Console.WriteLine($"Greška pri konekciji ili izvršavanju neispravnih SQL upita: {ex.Message}");
+            throw;
+        }
+        catch (InvalidOperationException ex)
+        {
+            Console.WriteLine($"Konekcija nije otvorena ili je otvorena više puta: {ex.Message}");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Neočekivana greška: {ex.Message}");
+            throw;
+        }
+    }
+
+    private List<TourStats>? GetMostReserved(SqliteConnection connection, int guideId, DateTime? from, DateTime? to)
+    {
+        try
+        {
+            string query = @"
+                SELECT t.Id, t.Name, t.MaxGuests, SUM(tr.GuestsCount) AS ReservationSum
+                FROM Tours t
+                LEFT JOIN Reservations tr ON t.Id = tr.TourId
+                WHERE t.GuideId = @GuideId";
+            if (from.HasValue && to.HasValue)
+            {
+                query += " AND t.DateTime >= @From AND t.DateTime <= @To";
+            }
+            query += " GROUP BY t.Id ORDER BY ReservationSum DESC LIMIT 5";
+            using SqliteCommand command = new SqliteCommand(query, connection);
+            command.Parameters.AddWithValue("@GuideId", guideId);
+            if (from.HasValue && to.HasValue)
+            {
+                command.Parameters.AddWithValue("@From", from.Value);
+                command.Parameters.AddWithValue("@To", to.Value);
+            }
+            using SqliteDataReader reader = command.ExecuteReader();
+            List<TourStats> tours = new List<TourStats>();
+            while (reader.Read())
+            {
+                TourStats tour = new TourStats
+                {
+                    Id = Convert.ToInt32(reader["Id"]),
+                    Name = reader["Name"].ToString(),
+                    MaxGuests = Convert.ToInt32(reader["MaxGuests"]),
+                    ReservationsSum = reader["ReservationSum"] != DBNull.Value ? Convert.ToInt32(reader["ReservationSum"]) : 0,
+                    ReservationRate = (double)(reader["ReservationSum"] != DBNull.Value ? Convert.ToInt32(reader["ReservationSum"]) : 0) / Convert.ToInt32(reader["MaxGuests"]) * 100
+                };
+                if (tour.ReservationsSum != 0)
+                {
+                    tours.Add(tour);
+                }
+            }
+            return tours;
+        }
+        catch (SqliteException ex)
+        {
+            Console.WriteLine($"Greška pri konekciji ili izvršavanju neispravnih SQL upita: {ex.Message}");
+            throw;
+        }
+        catch (InvalidOperationException ex)
+        {
+            Console.WriteLine($"Konekcija nije otvorena ili je otvorena više puta: {ex.Message}");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Neočekivana greška: {ex.Message}");
+            throw;
+        }
+    }
+
+    private List<TourStats> GetLeastReserved(SqliteConnection connection, int guideId, DateTime? from, DateTime? to)
+    {
+        try
+        {
+            string query = @"
+                SELECT t.Id, t.Name, t.MaxGuests, SUM(tr.GuestsCount) AS ReservationSum
+                FROM Tours t
+                LEFT JOIN Reservations tr ON t.Id = tr.TourId
+                WHERE t.GuideId = @GuideId";
+            if (from.HasValue && to.HasValue)
+            {
+                query += " AND t.DateTime >= @From AND t.DateTime <= @To";
+            }
+            query += " GROUP BY t.Id ORDER BY ReservationSum LIMIT 5";
+            using SqliteCommand command = new SqliteCommand(query, connection);
+            command.Parameters.AddWithValue("@GuideId", guideId);
+            if (from.HasValue && to.HasValue)
+            {
+                command.Parameters.AddWithValue("@From", from.Value);
+                command.Parameters.AddWithValue("@To", to.Value);
+            }
+            using SqliteDataReader reader = command.ExecuteReader();
+            List<TourStats> tours = new List<TourStats>();
+            while (reader.Read())
+            {
+                TourStats tour = new TourStats
+                {
+                    Id = Convert.ToInt32(reader["Id"]),
+                    Name = reader["Name"].ToString(),
+                    MaxGuests = Convert.ToInt32(reader["MaxGuests"]),
+                    ReservationsSum = reader["ReservationSum"] != DBNull.Value ? Convert.ToInt32(reader["ReservationSum"]) : 0,
+                    ReservationRate = (double)(reader["ReservationSum"] != DBNull.Value ? Convert.ToInt32(reader["ReservationSum"]) : 0) / Convert.ToInt32(reader["MaxGuests"]) * 100
+                };
+                if (tour.ReservationsSum != 0)
+                {
+                    tours.Add(tour);
+                }
+            }
+            return tours;
+        }
+        catch (SqliteException ex)
+        {
+            Console.WriteLine($"Greška pri konekciji ili izvršavanju neispravnih SQL upita: {ex.Message}");
+            throw;
+        }
+        catch (InvalidOperationException ex)
+        {
+            Console.WriteLine($"Konekcija nije otvorena ili je otvorena više puta: {ex.Message}");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Neočekivana greška: {ex.Message}");
+            throw;
+        }
+    }
+
+    private List<TourStats> GetMostFilled(SqliteConnection connection, int guideId, DateTime? from, DateTime? to)
+    {
+        try
+        {
+            string query = @"
+                SELECT t.Id, t.Name, t.MaxGuests, SUM(tr.GuestsCount) AS ReservationSum
+                FROM Tours t
+                LEFT JOIN Reservations tr ON t.Id = tr.TourId
+                WHERE t.GuideId = @GuideId";
+            if (from.HasValue && to.HasValue)
+            {
+                query += " AND t.DateTime >= @From AND t.DateTime <= @To";
+            }
+            query += " GROUP BY t.Id ORDER BY ReservationSum DESC LIMIT 5";
+            using SqliteCommand command = new SqliteCommand(query, connection);
+            command.Parameters.AddWithValue("@GuideId", guideId);
+            if (from.HasValue && to.HasValue)
+            {
+                command.Parameters.AddWithValue("@From", from.Value);
+                command.Parameters.AddWithValue("@To", to.Value);
+            }
+            using SqliteDataReader reader = command.ExecuteReader();
+            List<TourStats> tours = new List<TourStats>();
+            while (reader.Read())
+            {
+                TourStats tour = new TourStats
+                {
+                    Id = Convert.ToInt32(reader["Id"]),
+                    Name = reader["Name"].ToString(),
+                    MaxGuests = Convert.ToInt32(reader["MaxGuests"]),
+                    ReservationsSum = reader["ReservationSum"] != DBNull.Value ? Convert.ToInt32(reader["ReservationSum"]) : 0,
+                    ReservationRate = (double)(reader["ReservationSum"] != DBNull.Value ? Convert.ToInt32(reader["ReservationSum"]) : 0) / Convert.ToInt32(reader["MaxGuests"]) * 100
+                };
+                if (tour.ReservationsSum != 0)
+                {
+                    tours.Add(tour);
+                }
+            }
+
+            List<TourStats> sorted = tours.OrderByDescending(t => t.ReservationRate).Take(5).ToList();
+            return tours;
+        }
+        catch (SqliteException ex)
+        {
+            Console.WriteLine($"Greška pri konekciji ili izvršavanju neispravnih SQL upita: {ex.Message}");
+            throw;
+        }
+        catch (InvalidOperationException ex)
+        {
+            Console.WriteLine($"Konekcija nije otvorena ili je otvorena više puta: {ex.Message}");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Neočekivana greška: {ex.Message}");
+            throw;
+        }
+    }
+
+    private List<TourStats> GetLeastFilled(SqliteConnection connection, int guideId, DateTime? from, DateTime? to)
+    {
+        try
+        {
+            string query = @"
+                SELECT t.Id, t.Name, t.MaxGuests, SUM(tr.GuestsCount) AS ReservationSum
+                FROM Tours t
+                LEFT JOIN Reservations tr ON t.Id = tr.TourId
+                WHERE t.GuideId = @GuideId";
+            if (from.HasValue && to.HasValue)
+            {
+                query += " AND t.DateTime >= @From AND t.DateTime <= @To";
+            }
+            query += " GROUP BY t.Id ORDER BY ReservationSum LIMIT 5";
+            using SqliteCommand command = new SqliteCommand(query, connection);
+            command.Parameters.AddWithValue("@GuideId", guideId);
+            if (from.HasValue && to.HasValue)
+            {
+                command.Parameters.AddWithValue("@From", from.Value);
+                command.Parameters.AddWithValue("@To", to.Value);
+            }
+            using SqliteDataReader reader = command.ExecuteReader();
+            List<TourStats> tours = new List<TourStats>();
+            while (reader.Read())
+            {
+                TourStats tour = new TourStats
+                {
+                    Id = Convert.ToInt32(reader["Id"]),
+                    Name = reader["Name"].ToString(),
+                    MaxGuests = Convert.ToInt32(reader["MaxGuests"]),
+                    ReservationsSum = reader["ReservationSum"] != DBNull.Value ? Convert.ToInt32(reader["ReservationSum"]) : 0,
+                    ReservationRate = (double)(reader["ReservationSum"] != DBNull.Value ? Convert.ToInt32(reader["ReservationSum"]) : 0) / Convert.ToInt32(reader["MaxGuests"]) * 100
+                };
+                if (tour.ReservationsSum != 0)
+                {
+                    tours.Add(tour);
+                }
+            }
+
+            List<TourStats> sorted = tours.OrderBy(t => t.ReservationRate).Take(5).ToList();
+            return tours;
+        }
+        catch (SqliteException ex)
+        {
+            Console.WriteLine($"Greška pri konekciji ili izvršavanju neispravnih SQL upita: {ex.Message}");
+            throw;
+        }
+        catch (InvalidOperationException ex)
+        {
+            Console.WriteLine($"Konekcija nije otvorena ili je otvorena više puta: {ex.Message}");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Neočekivana greška: {ex.Message}");
+            throw;
+        }
+    }
 }
