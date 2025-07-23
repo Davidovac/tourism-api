@@ -1,4 +1,6 @@
-﻿using Microsoft.Data.Sqlite;
+﻿using System.Collections.Generic;
+using System.Text.RegularExpressions;
+using Microsoft.Data.Sqlite;
 using tourism_api.Domain;
 
 namespace tourism_api.Repositories;
@@ -12,7 +14,7 @@ public class KeyPointRepository
         _connectionString = configuration["ConnectionString:SQLiteConnection"];
     }
 
-    public List<KeyPoint> GetPagedTourless(int page, int pageSize)
+    public List<KeyPoint> GetPaged(int tourId, int page, int pageSize)
     {
         List<KeyPoint> keyPoints = new List<KeyPoint>();
 
@@ -23,13 +25,20 @@ public class KeyPointRepository
 
             string query = @$"
                     SELECT Id, OrderPosition, Name, Description, ImageUrl, Latitude, Longitude
-                    FROM (SELECT k.Id, k.OrderPosition, k.Name, k.Description, k.ImageUrl, k.Latitude, k.Longitude, tk.KeyPointId
+                    FROM (SELECT k.Id, k.OrderPosition, k.Name, k.Description, k.ImageUrl, k.Latitude, k.Longitude
                     FROM KeyPoints k
                     LEFT JOIN ToursKeyPoints tk ON k.Id = tk.KeyPointId
-                    WHERE tk.KeyPointId IS NULL
+                    ";
+            if (tourId != 0)
+            {
+                query += "WHERE tk.TourId != @TourId OR tk.TourId IS NULL";
+            }
+            query += $@"
+                    GROUP BY k.Id
                     ORDER BY k.Id)
                     LIMIT @PageSize OFFSET @Offset";
             using SqliteCommand command = new SqliteCommand(query, connection);
+            command.Parameters.AddWithValue("@TourId", tourId);
             command.Parameters.AddWithValue("@PageSize", pageSize);
             command.Parameters.AddWithValue("@Offset", pageSize * (page - 1));
 
@@ -73,7 +82,7 @@ public class KeyPointRepository
         }
     }
 
-    public int CountAllTourless()
+    public int CountAll(int tourId)
     {
         try
         {
@@ -81,12 +90,18 @@ public class KeyPointRepository
             connection.Open();
 
             string query = @$"SELECT COUNT(*)
-                            FROM(SELECT k.Id, k.OrderPosition, k.Name, k.Description, k.ImageUrl, k.Latitude, k.Longitude, tk.KeyPointId
+                            FROM (SELECT k.Id, k.OrderPosition, k.Name, k.Description, k.ImageUrl, k.Latitude, k.Longitude
                             FROM KeyPoints k
-                            LEFT JOIN ToursKeyPoints tk ON k.Id = tk.KeyPointId
-                            WHERE tk.KeyPointId IS NULL);";
+                            LEFT JOIN ToursKeyPoints tk ON k.Id = tk.KeyPointId";
+            if (tourId != 0)
+            {
+                query += "WHERE tk.TourId != @TourId OR tk.TourId IS NULL";
+            }
+            query += $@"
+                    GROUP BY k.Id
+                    ORDER BY k.Id)";
             using SqliteCommand command = new SqliteCommand(query, connection);
-
+            command.Parameters.AddWithValue("@TourId", tourId);
             return Convert.ToInt32(command.ExecuteScalar());
         }
         catch (SqliteException ex)

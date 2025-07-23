@@ -23,8 +23,7 @@ CREATE TABLE KeyPoints (
     Description TEXT,
     ImageUrl TEXT,
     Latitude REAL,
-	Longitude REAL,
-    TourId INTEGER
+	Longitude REAL
 );
 
 CREATE TABLE ToursKeypoints (
@@ -35,7 +34,7 @@ CREATE TABLE ToursKeypoints (
 	FOREIGN KEY (KeyPointId) REFERENCES KeyPoints(Id) ON DELETE CASCADE
 );
 
-CREATE TABLE Reservation (
+CREATE TABLE Reservations (
 	Id INTEGER PRIMARY KEY AUTOINCREMENT,
 	GuestsCount INTEGER,
 	UserId INTEGER NOT NULL,
@@ -85,18 +84,6 @@ CREATE TABLE RestaurantImages (
     ImageUrl TEXT NOT NULL,
     FOREIGN KEY (RestaurantId) REFERENCES Restaurants(Id) ON DELETE CASCADE
 );
-
-INSERT INTO RestaurantImages (RestaurantId, ImageUrl) VALUES
-(1, 'https://example.com/kalemegdan_restaurant_1.jpg'),
-(1, 'https://example.com/kalemegdan_restaurant_2.jpg'),
-(2, 'https://example.com/novi_sad_restaurant_1.jpg'),
-(2, 'https://example.com/novi_sad_restaurant_2.jpg'),
-(3, 'https://example.com/nis_restaurant_1.jpg'),
-(4, 'https://example.com/zemun_restaurant_1.jpg'),
-(4, 'https://example.com/zemun_restaurant_2.jpg'),
-(4, 'https://example.com/zemun_restaurant_3.jpg'),
-(5, 'https://example.com/subotica_restaurant_1.jpg'),
-(5, 'https://example.com/subotica_restaurant_2.jpg');
 
 INSERT INTO Users (Id,Username,Password,Role) VALUES 
  (1,'turista1','turista1','turista'),
@@ -174,3 +161,15 @@ INSERT INTO Meals (Id,OrderPosition,Name,Price,Ingredients,ImageUrl,RestaurantId
  (11,1,'Pašticada',16.0,'Goveđi gulaš sa povrćem i vinom','https://example.com/pasticada.jpg',5),
  (12,2,'Pržena Piletina',10.5,'Hrskava pržena piletina sa pomfritom','https://example.com/fried_chicken.jpg',5),
  (13,3,'Gulaš',12.0,'Govedina, povrće, paprika','https://example.com/goulash.jpg',5);
+
+ INSERT INTO RestaurantImages (RestaurantId, ImageUrl) VALUES
+(1, 'https://example.com/kalemegdan_restaurant_1.jpg'),
+(1, 'https://example.com/kalemegdan_restaurant_2.jpg'),
+(2, 'https://example.com/novi_sad_restaurant_1.jpg'),
+(2, 'https://example.com/novi_sad_restaurant_2.jpg'),
+(3, 'https://example.com/nis_restaurant_1.jpg'),
+(4, 'https://example.com/zemun_restaurant_1.jpg'),
+(4, 'https://example.com/zemun_restaurant_2.jpg'),
+(4, 'https://example.com/zemun_restaurant_3.jpg'),
+(5, 'https://example.com/subotica_restaurant_1.jpg'),
+(5, 'https://example.com/subotica_restaurant_2.jpg');

@@ -48,7 +48,7 @@ public class TourRepository
                     Id = Convert.ToInt32(reader["Id"]),
                     Name = reader["Name"].ToString(),
                     Description = reader["Description"].ToString(),
-                    DateTime = Convert.ToDateTime(reader["DateTime"]),
+                    DateTime = reader["DateTime"] != DBNull.Value ? Convert.ToDateTime(reader["DateTime"]) : null,
                     MaxGuests = Convert.ToInt32(reader["MaxGuests"]),
                     Status = reader["Status"].ToString(),
                     GuideId = Convert.ToInt32(reader["GuideId"]),
@@ -93,7 +93,7 @@ public class TourRepository
             using SqliteConnection connection = new SqliteConnection(_connectionString);
             connection.Open();
 
-            string query = "SELECT COUNT(*) FROM Tours";
+            string query = "SELECT COUNT(*) FROM Tours WHERE Status = 'objavljeno'";
             using SqliteCommand command = new SqliteCommand(query, connection);
 
             return Convert.ToInt32(command.ExecuteScalar());
@@ -147,7 +147,7 @@ public class TourRepository
                     Id = Convert.ToInt32(reader["Id"]),
                     Name = reader["Name"].ToString(),
                     Description = reader["Description"].ToString(),
-                    DateTime = Convert.ToDateTime(reader["DateTime"]),
+                    DateTime = reader["DateTime"] != DBNull.Value ? Convert.ToDateTime(reader["DateTime"]) : null,
                     MaxGuests = Convert.ToInt32(reader["MaxGuests"]),
                     Status = reader["Status"].ToString(),
                     GuideId = Convert.ToInt32(reader["GuideId"]),
@@ -210,9 +210,9 @@ public class TourRepository
                     tour = new Tour
                     {
                         Id = Convert.ToInt32(reader["Id"]),
-                        Name = reader["Name"].ToString(),
+                        Name = reader["Name"] != DBNull.Value ? reader["Name"].ToString() : "",
                         Description = reader["Description"].ToString(),
-                        DateTime = Convert.ToDateTime(reader["DateTime"]),
+                        DateTime = reader["DateTime"] != DBNull.Value ? Convert.ToDateTime(reader["DateTime"]) : null,
                         MaxGuests = Convert.ToInt32(reader["MaxGuests"]),
                         Status = reader["Status"].ToString(),
                         GuideId = Convert.ToInt32(reader["GuideId"]),
@@ -240,10 +240,6 @@ public class TourRepository
                     };
                     tour.KeyPoints.Add(keyPoint);
                 }
-            }
-            if (tour != null && tour.Status != "objavljeno")
-            {
-                return null;
             }
 
             return tour;
@@ -286,7 +282,14 @@ public class TourRepository
                     SELECT LAST_INSERT_ROWID();");
             command.Parameters.AddWithValue("@Name", tour.Name);
             command.Parameters.AddWithValue("@Description", tour.Description);
-            command.Parameters.AddWithValue("@DateTime", tour.DateTime);
+            if (tour.DateTime == null)
+            {
+                command.Parameters.AddWithValue("@DateTime", DBNull.Value);
+            }
+            else
+            {
+                command.Parameters.AddWithValue("@DateTime", tour.DateTime);
+            }
             command.Parameters.AddWithValue("@MaxGuests", tour.MaxGuests);
             command.Parameters.AddWithValue("@Status", tour.Status);
             command.Parameters.AddWithValue("@GuideId", tour.GuideId);
@@ -642,12 +645,15 @@ public class TourRepository
                 SELECT t.Id, t.Name, t.MaxGuests, SUM(tr.GuestsCount) AS ReservationSum
                 FROM Tours t
                 LEFT JOIN Reservations tr ON t.Id = tr.TourId
-                WHERE t.GuideId = @GuideId";
+                WHERE t.GuideId = 10";
+
             if (from.HasValue && to.HasValue)
             {
                 query += " AND t.DateTime >= @From AND t.DateTime <= @To";
             }
-            query += " GROUP BY t.Id ORDER BY ReservationSum LIMIT 5";
+            query += @" GROUP BY t.Id
+                        HAVING ReservationSum IS NOT NULL
+                        ORDER BY ReservationSum LIMIT 5";
             using SqliteCommand command = new SqliteCommand(query, connection);
             command.Parameters.AddWithValue("@GuideId", guideId);
             if (from.HasValue && to.HasValue)
@@ -758,12 +764,15 @@ public class TourRepository
                 SELECT t.Id, t.Name, t.MaxGuests, SUM(tr.GuestsCount) AS ReservationSum
                 FROM Tours t
                 LEFT JOIN Reservations tr ON t.Id = tr.TourId
-                WHERE t.GuideId = @GuideId";
+                WHERE t.GuideId = 10";
+
             if (from.HasValue && to.HasValue)
             {
                 query += " AND t.DateTime >= @From AND t.DateTime <= @To";
             }
-            query += " GROUP BY t.Id ORDER BY ReservationSum LIMIT 5";
+            query += @" GROUP BY t.Id
+                        HAVING ReservationSum IS NOT NULL
+                        ORDER BY ReservationSum LIMIT 5";
             using SqliteCommand command = new SqliteCommand(query, connection);
             command.Parameters.AddWithValue("@GuideId", guideId);
             if (from.HasValue && to.HasValue)
