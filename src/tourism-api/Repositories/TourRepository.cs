@@ -235,8 +235,8 @@ public class TourRepository
                         Name = reader["KeyPointName"].ToString(),
                         Description = reader["KeyPointDescription"].ToString(),
                         ImageUrl = reader["KeyPointImageUrl"].ToString(),
-                        Latitude = Convert.ToInt32(reader["Latitude"]),
-                        Longitude = Convert.ToInt32(reader["Longitude"]),
+                        Latitude = Convert.ToDouble(reader["Latitude"]),
+                        Longitude = Convert.ToDouble(reader["Longitude"])
                     };
                     tour.KeyPoints.Add(keyPoint);
                 }

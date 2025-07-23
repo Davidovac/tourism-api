@@ -54,7 +54,7 @@ public class KeyPointRepository
                     Description = reader["Description"].ToString(),
                     ImageUrl = reader["ImageUrl"].ToString(),
                     Latitude = Convert.ToDouble(reader["Latitude"]),
-                    Longitude = Convert.ToDouble(reader["Longitude"]),
+                    Longitude = Convert.ToDouble(reader["Longitude"])
                 });
             }
 
