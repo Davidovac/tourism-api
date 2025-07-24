@@ -24,7 +24,14 @@ public class TourController : ControllerBase
     {
         if (guideId > 0)
         {
-            return Ok(_tourRepo.GetByGuide(guideId));
+            User user = _userRepo.GetById(guideId);
+            if (user == null)
+            {
+                return NotFound($"User with ID {guideId} not found.");
+            }
+            List<Tour> tours = new List<Tour>();
+            tours = _tourRepo.GetByGuide(guideId);
+            return Ok(tours);
         }
 
         // Validacija za orderBy i orderDirection
@@ -78,9 +85,12 @@ public class TourController : ControllerBase
     [HttpPost]
     public ActionResult<Tour> Create([FromBody] Tour newTour)
     {
-        if (!newTour.IsValid())
+        if (newTour.Name != "")
         {
-            return BadRequest("Invalid tour data.");
+            if (!newTour.IsValid())
+            {
+                return BadRequest("Invalid tour data.");
+            }
         }
         try
         {

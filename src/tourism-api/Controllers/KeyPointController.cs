@@ -18,13 +18,13 @@ public class KeyPointController : ControllerBase
     }
 
     [HttpGet]
-    public ActionResult GetPaged([FromQuery] int page = 1)
+    public ActionResult GetPaged([FromQuery] int tourId, int page = 1)
     {
         List<string> validOrderByColumns = new List<string> { "Name", "Description", "DateTime", "MaxGuests" }; // Lista dozvoljenih kolona za sortiranje
         try
         {
-            List<KeyPoint> keyPoints = _keyPointRepo.GetPagedTourless(page, 4);
-            int totalCount = _keyPointRepo.CountAllTourless();
+            List<KeyPoint> keyPoints = _keyPointRepo.GetPaged(tourId, page, 4);
+            int totalCount = _keyPointRepo.CountAll(tourId);
             Object result = new
             {
                 Data = keyPoints,
