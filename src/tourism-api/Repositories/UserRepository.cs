@@ -61,7 +61,7 @@ public class UserRepository
         }
     }
 
-    public User GetById(int id)
+    public User? GetById(int id)
     {
         try
         {
