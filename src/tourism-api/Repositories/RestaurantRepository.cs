@@ -138,7 +138,6 @@ public class RestaurantRepository
     public List<Restaurant> GetByOwner(int ownerId, int page, int pageSize, string orderBy, string orderDirection)
     {
         List<Restaurant> restaurantList = new List<Restaurant>();
-        Dictionary<int, Restaurant> restaurantMap = new Dictionary<int, Restaurant>();
 
         try
         {
@@ -146,12 +145,11 @@ public class RestaurantRepository
             sqlConnection.Open();
 
             string query = @$"
-            SELECT r.Id AS RestaurantId, r.Name, r.Description, r.Capacity, r.ImageUrl, r.Latitude, r.Longitude, r.Status,
-                   u.Id AS OwnerId, u.Username,
-                   ri.ImageUrl AS ExtraImageUrl
+            SELECT r.Id AS RestaurantId, r.Name, r.Description, r.Capacity, r.ImageUrl,
+                   r.Latitude, r.Longitude, r.Status,
+                   u.Id AS OwnerId, u.Username
             FROM Restaurants r
             INNER JOIN Users u ON r.OwnerId = u.Id
-            LEFT JOIN RestaurantImages ri ON ri.RestaurantId = r.Id
             WHERE r.OwnerId = @OwnerId
             ORDER BY {orderBy} {orderDirection}
             LIMIT @PageSize OFFSET @Offset";
@@ -167,60 +165,52 @@ public class RestaurantRepository
             {
                 int restaurantId = Convert.ToInt32(sqlReader["RestaurantId"]);
 
-                if (!restaurantMap.TryGetValue(restaurantId, out Restaurant restaurant))
+                var restaurant = new Restaurant
                 {
-                    restaurant = new Restaurant
+                    Id = restaurantId,
+                    Name = sqlReader["Name"].ToString(),
+                    Description = sqlReader["Description"].ToString(),
+                    Capacity = Convert.ToInt32(sqlReader["Capacity"]),
+                    Latitude = Convert.ToDouble(sqlReader["Latitude"]),
+                    Longitude = Convert.ToDouble(sqlReader["Longitude"]),
+                    Status = sqlReader["Status"].ToString(),
+                    OwnerId = Convert.ToInt32(sqlReader["OwnerId"]),
+                    Owner = new User
                     {
-                        Id = restaurantId,
-                        Name = sqlReader["Name"].ToString(),
-                        Description = sqlReader["Description"].ToString(),
-                        Capacity = Convert.ToInt32(sqlReader["Capacity"]),
-                        Latitude = Convert.ToDouble(sqlReader["Latitude"]),
-                        Longitude = Convert.ToDouble(sqlReader["Longitude"]),
-                        Status = sqlReader["Status"].ToString(),
-                        OwnerId = Convert.ToInt32(sqlReader["OwnerId"]),
-                        Owner = new User
-                        {
-                            Id = Convert.ToInt32(sqlReader["OwnerId"]),
-                            Username = sqlReader["Username"].ToString()
-                        },
-                        ImageUrls = new List<string>(),
-                        Ratings = GetRatings(sqlConnection, restaurantId)
-                    };
+                        Id = Convert.ToInt32(sqlReader["OwnerId"]),
+                        Username = sqlReader["Username"].ToString()
+                    },
+                    ImageUrls = GetImages(sqlConnection, restaurantId),
+                    Ratings = GetRatings(sqlConnection, restaurantId)
+                };
 
-                    restaurantMap.Add(restaurantId, restaurant);
-                    restaurantList.Add(restaurant);
-                }
-
-                if (sqlReader["ExtraImageUrl"] != DBNull.Value)
-                {
-                    restaurant.ImageUrls.Add(sqlReader["ExtraImageUrl"].ToString());
-                }
+                restaurantList.Add(restaurant);
             }
 
             return restaurantList;
         }
         catch (SqliteException ex)
-            {
-                Console.WriteLine($"Greška pri konekciji ili izvršavanju neispravnih SQL upita: {ex.Message}");
-                throw;
-            }
-            catch (FormatException ex)
-            {
-                Console.WriteLine($"Greška u konverziji podataka iz baze: {ex.Message}");
-                throw;
-            }
-            catch (InvalidOperationException ex)
-            {
-                Console.WriteLine($"Konekcija nije otvorena ili je otvorena više puta: {ex.Message}");
-                throw;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Neočekivana greška: {ex.Message}");
-                throw;
-            }
+        {
+            Console.WriteLine($"Greška pri konekciji ili izvršavanju SQL upita: {ex.Message}");
+            throw;
         }
+        catch (FormatException ex)
+        {
+            Console.WriteLine($"Greška u konverziji podataka iz baze: {ex.Message}");
+            throw;
+        }
+        catch (InvalidOperationException ex)
+        {
+            Console.WriteLine($"Konekcija nije otvorena ili je otvorena više puta: {ex.Message}");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Neočekivana greška: {ex.Message}");
+            throw;
+        }
+    }
+
 
     public Restaurant GetById(int id)
     {
@@ -604,6 +594,23 @@ public class RestaurantRepository
                 Console.WriteLine($"Greška pri učitavanju svih restorana: {ex.Message}");
                 throw;
             }
+        }
+
+        private List<string> GetImages(SqliteConnection connection, int restaurantId)
+        {
+            List<string> images = new List<string>();
+
+            using var cmd = connection.CreateCommand();
+            cmd.CommandText = "SELECT ImageUrl FROM RestaurantImages WHERE RestaurantId = @RestaurantId";
+            cmd.Parameters.AddWithValue("@RestaurantId", restaurantId);
+
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                images.Add(reader["ImageUrl"].ToString());
+            }
+
+            return images;
         }
 
 
