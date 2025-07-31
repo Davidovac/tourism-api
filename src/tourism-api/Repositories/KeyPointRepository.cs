@@ -95,7 +95,7 @@ public class KeyPointRepository
                             LEFT JOIN ToursKeyPoints tk ON k.Id = tk.KeyPointId";
             if (tourId != 0)
             {
-                query += "WHERE tk.TourId != @TourId OR tk.TourId IS NULL";
+                query += " WHERE tk.TourId != @TourId OR tk.TourId IS NULL";
             }
             query += $@"
                     GROUP BY k.Id
