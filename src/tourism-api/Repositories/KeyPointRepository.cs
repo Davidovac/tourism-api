@@ -28,13 +28,13 @@ public class KeyPointRepository
                     FROM (SELECT k.Id, k.OrderPosition, k.Name, k.Description, k.ImageUrl, k.Latitude, k.Longitude
                     FROM KeyPoints k
                     LEFT JOIN ToursKeyPoints tk ON k.Id = tk.KeyPointId
+                    GROUP BY k.Id
                     ";
             if (tourId != 0)
             {
-                query += "WHERE tk.TourId != @TourId OR tk.TourId IS NULL";
+                query += "HAVING tk.TourId != @TourId OR tk.TourId IS NULL";
             }
             query += $@"
-                    GROUP BY k.Id
                     ORDER BY k.Id)
                     LIMIT @PageSize OFFSET @Offset";
             using SqliteCommand command = new SqliteCommand(query, connection);
@@ -92,14 +92,14 @@ public class KeyPointRepository
             string query = @$"SELECT COUNT(*)
                             FROM (SELECT k.Id, k.OrderPosition, k.Name, k.Description, k.ImageUrl, k.Latitude, k.Longitude
                             FROM KeyPoints k
-                            LEFT JOIN ToursKeyPoints tk ON k.Id = tk.KeyPointId";
+                            LEFT JOIN ToursKeyPoints tk ON k.Id = tk.KeyPointId
+                            GROUP BY k.Id";
             if (tourId != 0)
             {
-                query += " WHERE tk.TourId != @TourId OR tk.TourId IS NULL";
+                query += "\nHAVING tk.TourId != @TourId OR tk.TourId IS NULL";
             }
             query += $@"
-                    GROUP BY k.Id
-                    ORDER BY k.Id)";
+                    ORDER BY k.Id);";
             using SqliteCommand command = new SqliteCommand(query, connection);
             command.Parameters.AddWithValue("@TourId", tourId);
             return Convert.ToInt32(command.ExecuteScalar());
